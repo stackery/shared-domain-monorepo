@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  ApiDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !Ref EnvConfigDOMAINAsString
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: !Ref ApiCertificate
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref EnvConfigDOMAINAsString
+      DomainValidationOptions:
+        - DomainName: !Ref EnvConfigDOMAINAsString
+          ValidationDomain: !Ref EnvConfigVALIDATIONDOMAINAsString
+      ValidationMethod: EMAIL
+  ApiUsersPathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      BasePath: users
+      DomainName: !Ref ApiDomain
+      RestApiId:
+        Fn::ImportValue: !Sub Users-${EnvironmentTagName}-RestApiId
+      Stage:
+        Fn::ImportValue: !Sub Users-${EnvironmentTagName}-StageName
+  ApiAccountsPathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      BasePath: accounts
+      DomainName: !Ref ApiDomain
+      RestApiId:
+        Fn::ImportValue: !Sub Accounts-${EnvironmentTagName}-RestApiId
+      Stage:
+        Fn::ImportValue: !Sub Accounts-${EnvironmentTagName}-StageName
+Parameters:
+  EnvironmentTagName:
+    Type: String
+    Description: Environment Name (injected by Stackery at deployment time)
+  EnvConfigDOMAINAsString:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /<EnvironmentName>/DOMAIN
+  EnvConfigVALIDATIONDOMAINAsString:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /<EnvironmentName>/VALIDATION_DOMAIN
+Metadata:
+  EnvConfigParameters:
+    EnvConfigDOMAINAsString: DOMAIN
+    EnvConfigVALIDATIONDOMAINAsString: VALIDATION_DOMAIN
